@@ -1,0 +1,136 @@
+import { useState, useEffect, useRef } from 'react'
+import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js'
+import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js'
+import { createTransport } from '@smithery/sdk/transport.js'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
+
+function App() {
+  const [count, setCount] = useState(0)
+  const [mcpResponse, setMcpResponse] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState('disconnected')
+  const mcpClientRef = useRef(null)
+  const transportRef = useRef(null)
+
+  useEffect(() => {
+    const initClient = async () => {
+      try {
+        // Initialize MCP client if not already done
+        if (!mcpClientRef.current) {
+          mcpClientRef.current = new MCPClient(
+            {
+              name: "test-mcp-client",
+              version: "1.0.0"
+            },
+            {
+              capabilities: {
+                prompts: {},
+                resources: {},
+                tools: {}
+              }
+            }
+          );
+        }
+
+        setConnectionStatus('connecting');
+        
+        const originalUrl = new URL(import.meta.env.VITE_MCP_SERVER_URL);
+        transportRef.current = createTransport(originalUrl, {
+          githubPersonalAccessToken: import.meta.env.VITE_MCP_API_KEY
+        });
+        console.log('Created transport:', transportRef.current);
+
+        await mcpClientRef.current.connect(transportRef.current);
+        console.log('Successfully connected to MCP server');
+        const tools = await mcpClientRef.current.listTools();
+        console.log('Available tools:', tools);
+        const prompts = await mcpClientRef.current.listPrompts();
+        console.log('Available prompts:', prompts);
+        // const prompt = await mcpClientRef.current.getPrompt("news-summary");
+        // console.log('Prompt:', prompt);
+        setConnectionStatus('connected');
+      } catch (error) {
+        console.error('Failed to connect to MCP server:', error);
+        setConnectionStatus('error');
+      }
+    };
+
+    initClient();
+    
+    return () => {
+      if (transportRef.current) {
+        transportRef.current.close();
+      }
+      if (mcpClientRef.current) {
+        mcpClientRef.current.complete();
+      }
+      setConnectionStatus('disconnected');
+    };
+  }, []);
+
+  const handleMCPRequest = async () => {
+    if (connectionStatus !== 'connected' || !mcpClientRef.current) {
+      setMcpResponse('Not connected to MCP server');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await mcpClientRef.current.callTool({
+        name: "get-daily-news",
+        arguments: {}
+      });
+
+      setMcpResponse(response.content[0].text);
+    } catch (error) {
+      console.error('MCP Error:', error);
+      setMcpResponse('Error communicating with MCP server');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <div>
+        <a href="https://vite.dev" target="_blank">
+          <img src={viteLogo} className="logo" alt="Vite logo" />
+        </a>
+        <a href="https://react.dev" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
+      </div>
+      <h1>MCP + Vite + React</h1>
+      <div className="card">
+        <div style={{ marginBottom: '1rem' }}>
+          Connection Status: <span style={{ 
+            color: connectionStatus === 'connected' ? 'green' : 
+                   connectionStatus === 'connecting' ? 'orange' : 'red' 
+          }}>{connectionStatus}</span>
+        </div>
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count}
+        </button>
+        <button 
+          onClick={handleMCPRequest}
+          disabled={loading || connectionStatus !== 'connected'}
+          style={{ marginLeft: '1rem' }}
+        >
+          {loading ? 'Asking MCP...' : 'Get Daily News'}
+        </button>
+        {mcpResponse && (
+          <p style={{ marginTop: '1rem' }}>
+            MCP says: {mcpResponse}
+          </p>
+        )}
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
+  )
+}
+
+export default App
