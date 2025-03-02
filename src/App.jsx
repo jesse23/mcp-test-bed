@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js'
 import { createTransport } from '@smithery/sdk/transport.js'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { OpenAIChatAdapter } from "./adapter.js";
 import './App.css'
 
 function App() {
@@ -93,6 +92,8 @@ function App() {
 
   const handleGPTMiniRequest = async () => {
     try {
+      const openaiAdapter = new OpenAIChatAdapter(mcpClientRef.current);
+      const tools = await openaiAdapter.listTools();
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -102,14 +103,21 @@ function App() {
         body: JSON.stringify({
           model: "gpt-4o-mini",
           messages: [
-            { role: "user", content: "What is the meaning of life?" }
+            { role: "user", content: "Get today's news" }
           ],
           temperature: 0.7,
-          max_tokens: 100
+          max_tokens: 100,
+          tools,
         })
       });
       const data = await response.json();
       console.log('GPT Mini Response:', data);
+      if (data.choices[0].message.tool_calls) {
+        const toolResult = await openaiAdapter.callTool(data);
+        setMcpResponse(toolResult[0].content[0].text);
+      } else {
+        setMcpResponse(data.choices[0].message.content);
+      }
     } catch (error) {
       console.error('GPT Mini Error:', error);
     }
@@ -117,15 +125,7 @@ function App() {
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>MCP + Vite + React</h1>
+      <h1>MCP Client Example</h1>
       <div className="card">
         <div style={{ marginBottom: '1rem' }}>
           Connection Status: <span style={{
