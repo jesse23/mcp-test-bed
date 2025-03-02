@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js'
-import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js'
 import { createTransport } from '@smithery/sdk/transport.js'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
@@ -35,7 +34,7 @@ function App() {
         }
 
         setConnectionStatus('connecting');
-        
+
         const originalUrl = new URL(import.meta.env.VITE_MCP_SERVER_URL);
         transportRef.current = createTransport(originalUrl, {
           githubPersonalAccessToken: import.meta.env.VITE_MCP_API_KEY
@@ -58,7 +57,7 @@ function App() {
     };
 
     initClient();
-    
+
     return () => {
       if (transportRef.current) {
         transportRef.current.close();
@@ -92,6 +91,30 @@ function App() {
     }
   }
 
+  const handleGPTMiniRequest = async () => {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "user", content: "What is the meaning of life?" }
+          ],
+          temperature: 0.7,
+          max_tokens: 100
+        })
+      });
+      const data = await response.json();
+      console.log('GPT Mini Response:', data);
+    } catch (error) {
+      console.error('GPT Mini Error:', error);
+    }
+  }
+
   return (
     <>
       <div>
@@ -105,20 +128,26 @@ function App() {
       <h1>MCP + Vite + React</h1>
       <div className="card">
         <div style={{ marginBottom: '1rem' }}>
-          Connection Status: <span style={{ 
-            color: connectionStatus === 'connected' ? 'green' : 
-                   connectionStatus === 'connecting' ? 'orange' : 'red' 
+          Connection Status: <span style={{
+            color: connectionStatus === 'connected' ? 'green' :
+              connectionStatus === 'connecting' ? 'orange' : 'red'
           }}>{connectionStatus}</span>
         </div>
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
-        <button 
+        <button
           onClick={handleMCPRequest}
           disabled={loading || connectionStatus !== 'connected'}
           style={{ marginLeft: '1rem' }}
         >
           {loading ? 'Asking MCP...' : 'Get Daily News'}
+        </button>
+        <button
+          onClick={handleGPTMiniRequest}
+          style={{ marginLeft: '1rem' }}
+        >
+          Ask GPT Mini
         </button>
         {mcpResponse && (
           <p style={{ marginTop: '1rem' }}>
