@@ -1,25 +1,23 @@
 import { useState, useEffect } from 'react'
 import GPTManager from './clients/gpt.js';
-import { createMcpClient } from './clients/mcp.js';
+import { MCPClient } from './clients/mcp.js';
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [mcpResponse, setMcpResponse] = useState('')
   const [loading, setLoading] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState('disconnected')
   const [mcpClient, setMcpClient] = useState(null)
-  const [gptManager, setGptManager] = useState(null)
+  const [gptClient, setGptClient] = useState(null)
+  const [mcpResponse, setMcpResponse] = useState('')
 
   useEffect(() => {
     // Create and initialize MCP Client
-    const mcpClient = createMcpClient();
-    mcpClient.setStatusChangeCallback(setConnectionStatus);
-    mcpClient.initialize();
+    const mcpClient = new MCPClient({ onStatusChange: setConnectionStatus });
     setMcpClient(mcpClient);
+    mcpClient.initialize();
 
     // Initialize GPT Manager after MCP Client is set up
-    setGptManager(new GPTManager(mcpClient));
+    setGptClient(new GPTManager(mcpClient));
 
     // Cleanup on unmount
     return () => {
@@ -28,7 +26,7 @@ function App() {
   }, []);
 
   const handleMCPRequest = async () => {
-    if (!mcpClient || connectionStatus !== 'connected') {
+    if (connectionStatus !== 'connected') {
       setMcpResponse('Not connected to MCP server');
       return;
     }
@@ -46,14 +44,14 @@ function App() {
   }
 
   const handleGPTMiniRequest = async () => {
-    if (!gptManager) {
+    if (!gptClient) {
       setMcpResponse('GPT Manager not initialized');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await gptManager.callGPTMini();
+      const response = await gptClient.callGPTMini();
       setMcpResponse(response);
     } catch (error) {
       console.error('GPT Mini Error:', error);
@@ -73,19 +71,16 @@ function App() {
               connectionStatus === 'connecting' ? 'orange' : 'red'
           }}>{connectionStatus}</span>
         </div>
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
         <button
           onClick={handleMCPRequest}
-          disabled={loading || connectionStatus !== 'connected' || !mcpClient}
+          disabled={loading || connectionStatus !== 'connected'}
           style={{ marginLeft: '1rem' }}
         >
           {loading ? 'Asking MCP...' : 'Get Daily News'}
         </button>
         <button
           onClick={handleGPTMiniRequest}
-          disabled={loading || !gptManager}
+          disabled={loading || !gptClient}
           style={{ marginLeft: '1rem' }}
         >
           Ask GPT Mini

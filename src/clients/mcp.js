@@ -1,23 +1,25 @@
-import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { createTransport } from '@smithery/sdk/transport.js'
 
-export function createMcpClient() {
-  let client = null;
-  let transport = null;
-  let connectionStatus = 'disconnected';
-  let onStatusChange = null;
+export class MCPClient {
+  constructor({ onStatusChange }) {
+    this.client = null;
+    this.transport = null;
+    this.connectionStatus = 'disconnected';
+    this.onStatusChange = onStatusChange;
+  }
 
-  const updateStatus = (status) => {
-    connectionStatus = status;
-    if (onStatusChange) {
-      onStatusChange(status);
+  #updateStatus(status) {
+    this.connectionStatus = status;
+    if (this.onStatusChange) {
+      this.onStatusChange(status);
     }
-  };
+  }
 
-  const initialize = async () => {
+  async initialize() {
     try {
-      if (!client) {
-        client = new MCPClient(
+      if (!this.client) {
+        this.client = new Client(
           {
             name: "test-mcp-client",
             version: "1.0.0"
@@ -32,44 +34,44 @@ export function createMcpClient() {
         );
       }
 
-      updateStatus('connecting');
+      this.#updateStatus('connecting');
 
       const originalUrl = new URL(import.meta.env.VITE_MCP_SERVER_URL);
-      transport = createTransport(originalUrl, {
+      this.transport = createTransport(originalUrl, {
         githubPersonalAccessToken: import.meta.env.VITE_MCP_API_KEY
       });
-      console.log('Created transport:', transport);
+      console.log('Created transport:', this.transport);
 
-      await client.connect(transport);
+      await this.client.connect(this.transport);
       console.log('Successfully connected to MCP server');
-      const tools = await client.listTools();
+      const tools = await this.client.listTools();
       console.log('Available tools:', tools);
-      const prompts = await client.listPrompts();
+      const prompts = await this.client.listPrompts();
       console.log('Available prompts:', prompts);
 
-      updateStatus('connected');
+      this.#updateStatus('connected');
       return true;
     } catch (error) {
       console.error('Failed to connect to MCP server:', error);
-      updateStatus('error');
+      this.#updateStatus('error');
       return false;
     }
-  };
+  }
 
-  const listTools = async () => {
-    if (connectionStatus !== 'connected' || !client) {
+  async listTools() {
+    if (this.connectionStatus !== 'connected' || !this.client) {
       throw new Error('Not connected to MCP server');
     }
-    return await client.listTools();
-  };
+    return await this.client.listTools();
+  }
 
-  const callTool = async ({name, args = {}}) => {
-    if (connectionStatus !== 'connected' || !client) {
+  async callTool({name, args = {}}) {
+    if (this.connectionStatus !== 'connected' || !this.client) {
       throw new Error('Not connected to MCP server');
     }
 
     try {
-      const response = await client.callTool({
+      const response = await this.client.callTool({
         name,
         arguments: args
       });
@@ -78,26 +80,19 @@ export function createMcpClient() {
       console.error('MCP Error:', error);
       throw error;
     }
-  };
+  }
 
-  const cleanup = () => {
-    if (transport) {
-      transport.close();
+  cleanup() {
+    if (this.transport) {
+      this.transport.close();
     }
-    if (client) {
-      client.complete();
+    if (this.client) {
+      this.client.complete();
     }
-    updateStatus('disconnected');
-  };
+    this.#updateStatus('disconnected');
+  }
 
-  return {
-    initialize,
-    callTool,
-    listTools,
-    cleanup,
-    setStatusChangeCallback: (callback) => {
-      onStatusChange = callback;
-    },
-    getStatus: () => connectionStatus
-  };
-} 
+  getStatus() {
+    return this.connectionStatus;
+  }
+}
