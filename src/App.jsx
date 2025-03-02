@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import GPTManager from './clients/gpt.js';
-import { MCPClient } from './clients/mcp.js';
 import './App.css'
+import { useState, useEffect } from 'react'
+import { GPTClient } from './clients/gpt.js';
+import { MCPClient } from './clients/mcp.js';
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -14,12 +14,10 @@ function App() {
     // Create and initialize MCP Client
     const mcpClient = new MCPClient({ onStatusChange: setConnectionStatus });
     setMcpClient(mcpClient);
+    setGptClient(new GPTClient(mcpClient));
+
     mcpClient.initialize();
 
-    // Initialize GPT Manager after MCP Client is set up
-    setGptClient(new GPTManager(mcpClient));
-
-    // Cleanup on unmount
     return () => {
       mcpClient.cleanup();
     };

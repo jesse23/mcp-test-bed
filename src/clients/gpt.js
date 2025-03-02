@@ -1,8 +1,8 @@
-import { OpenAIChatAdapter } from "./adapter.js";
+import { MCPOpenAIChatAdapter } from "./adapter.js";
 
-class GPTManager {
+export class GPTClient {
   constructor(mcpClient) {
-    this.adapter = new OpenAIChatAdapter(mcpClient);
+    this.adapter = new MCPOpenAIChatAdapter(mcpClient);
   }
 
   async callGPTMini(prompt = "Get today's news") {
@@ -40,5 +40,3 @@ class GPTManager {
     }
   }
 }
-
-export default GPTManager; 
