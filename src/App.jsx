@@ -49,7 +49,7 @@ function App() {
 
     setLoading(true);
     try {
-      const response = await gptClient.callGPTMini();
+      const response = await gptClient.callGPTMini("Get today's news");
       setMcpResponse(response);
     } catch (error) {
       console.error('GPT Mini Error:', error);
@@ -61,7 +61,7 @@ function App() {
 
   return (
     <>
-      <h1>MCP Client Example</h1>
+      <h2>MCP Client Example</h2>
       <div className="card">
         <div style={{ marginBottom: '1rem' }}>
           Connection Status: <span style={{

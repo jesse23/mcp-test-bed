@@ -5,7 +5,7 @@ export class GPTClient {
     this.adapter = new MCPOpenAIChatAdapter(mcpClient);
   }
 
-  async callGPTMini(prompt = "Get today's news") {
+  async callGPTMini(prompt) {
     try {
       const tools = await this.adapter.listTools();
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
