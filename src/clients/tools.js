@@ -60,7 +60,7 @@ export class BrowserTools {
           ]
         };
 
-      case "window_resize":
+      case "open_window_resize":
         window.open(window.location.href, "_blank", `width=${args.width},height=${args.height}`);
         return {
           content: [
