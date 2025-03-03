@@ -7,6 +7,10 @@ import { ToolsAggregator } from "./clients/aggregator.js";
 import { BrowserTools } from "./clients/tools.js";
 import ReactMarkdown from 'react-markdown';
 
+import { executeGherkinFeature } from './gherkin-web/gherkin'
+import '../test/support/setup'
+import '../test/steps/app.steps'
+
 function App() {
   const [loading, setLoading] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState('disconnected')
