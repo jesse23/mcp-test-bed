@@ -70,7 +70,7 @@ export class MCPClient {
     return await this.client.listTools();
   }
 
-  async callTool({name, args = {}}) {
+  async callTool({name, arguments: args = {}}) {
     if (this.connectionStatus !== 'connected' || !this.client) {
       throw new Error('Not connected to MCP server');
     }
