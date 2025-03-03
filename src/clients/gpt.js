@@ -21,15 +21,21 @@ export class GPTClient {
           temperature: 0.7,
           max_tokens: 100,
           tools,
+          // tool_choice: "auto",
         })
       });
 
       const data = await response.json();
       console.log('GPT Mini Response:', data);
 
+      // only process choice[0]
       if (data.choices[0].message.tool_calls) {
-        const toolResult = await this.toolProvider.callTool(data);
-        return toolResult[0].content[0].text;
+        const { name, arguments: arg } = data.choices[0].message.tool_calls[0].function;
+        const toolResult = await this.toolProvider.callTool({
+          name,
+          arguments: JSON.parse(arg),
+        });
+        return toolResult.content[0].text;
       } else {
         return data.choices[0].message.content;
       }

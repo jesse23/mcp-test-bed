@@ -48,7 +48,7 @@ export class BrowserTools {
     ];
   }
 
-  async _callTool({ name, arguments: args }) {
+  async callTool({ name, arguments: args = {} }) {
     switch (name) {
       case "window_alert":
         window.alert(args.message);
@@ -73,22 +73,5 @@ export class BrowserTools {
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
-  }
-
-  async callTool(response, options) {
-    if (response.choices.length !== 1) {
-      throw new Error("Multiple choices not supported");
-    }
-    const choice = response.choices[0];
-    if (!choice?.message?.tool_calls) {
-      return [];
-    }
-    const toolCalls = choice.message.tool_calls;
-    return await Promise.all(toolCalls.map(async (toolCall) => {
-      return await this._callTool({
-        name: toolCall.function.name,
-        arguments: JSON.parse(toolCall.function.arguments),
-      });
-    }));
   }
 } 
