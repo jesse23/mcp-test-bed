@@ -1,13 +1,12 @@
-import { MCPOpenAIChatAdapter } from "./adapter.js";
 
 export class GPTClient {
-  constructor(mcpClient) {
-    this.adapter = new MCPOpenAIChatAdapter(mcpClient);
+  constructor(toolProvider) {
+    this.toolProvider = toolProvider; ;
   }
 
   async callGPTMini(prompt) {
     try {
-      const tools = await this.adapter.listTools();
+      const tools = await this.toolProvider.listTools();
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -29,7 +28,7 @@ export class GPTClient {
       console.log('GPT Mini Response:', data);
 
       if (data.choices[0].message.tool_calls) {
-        const toolResult = await this.adapter.callTool(data);
+        const toolResult = await this.toolProvider.callTool(data);
         return toolResult[0].content[0].text;
       } else {
         return data.choices[0].message.content;

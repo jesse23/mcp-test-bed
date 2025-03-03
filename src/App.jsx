@@ -2,6 +2,10 @@ import './App.css'
 import { useState, useEffect } from 'react'
 import { GPTClient } from './clients/gpt.js';
 import { MCPClient } from './clients/mcp.js';
+import { MCPOpenAIChatAdapter } from "./clients/adapter.js";
+import { ToolsAggregator } from "./clients/aggregator.js";
+import { BrowserTools } from "./clients/tools.js";
+import ReactMarkdown from 'react-markdown';
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -9,12 +13,13 @@ function App() {
   const [mcpClient, setMcpClient] = useState(null)
   const [gptClient, setGptClient] = useState(null)
   const [mcpResponse, setMcpResponse] = useState('')
+  const [gptInput, setGptInput] = useState('')
 
   useEffect(() => {
     // Create and initialize MCP Client
     const mcpClient = new MCPClient({ onStatusChange: setConnectionStatus });
     setMcpClient(mcpClient);
-    setGptClient(new GPTClient(mcpClient));
+    setGptClient(new GPTClient(new ToolsAggregator([new BrowserTools(), new MCPOpenAIChatAdapter(mcpClient)])));
 
     mcpClient.initialize();
 
@@ -31,7 +36,7 @@ function App() {
 
     setLoading(true);
     try {
-      const response = await mcpClient.callTool('get_stories');
+      const response = await mcpClient.callTool({ name:'get-daily-news' });
       setMcpResponse(response.content[0].text);
     } catch (error) {
       console.error('MCP Error:', error);
@@ -46,10 +51,14 @@ function App() {
       setMcpResponse('GPT Manager not initialized');
       return;
     }
+    if (!gptInput.trim()) {
+      setMcpResponse('Please enter a message for GPT Mini');
+      return;
+    }
 
     setLoading(true);
     try {
-      const response = await gptClient.callGPTMini("Get today's news");
+      const response = await gptClient.callGPTMini(gptInput);
       setMcpResponse(response);
     } catch (error) {
       console.error('GPT Mini Error:', error);
@@ -76,17 +85,33 @@ function App() {
         >
           {loading ? 'Asking MCP...' : 'Get Daily News'}
         </button>
-        <button
-          onClick={handleGPTMiniRequest}
-          disabled={loading || !gptClient}
-          style={{ marginLeft: '1rem' }}
-        >
-          Ask GPT Mini
-        </button>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <input
+            type="text"
+            value={gptInput}
+            onChange={(e) => setGptInput(e.target.value)}
+            placeholder="Enter your message for GPT Mini"
+            style={{ 
+              padding: '0.5rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              flex: 1
+            }}
+            onKeyPress={(e) => e.key === 'Enter' && handleGPTMiniRequest()}
+          />
+          <button
+            onClick={handleGPTMiniRequest}
+            disabled={loading || !gptClient}
+          >
+            {loading ? 'Processing...' : 'Ask GPT Mini'}
+          </button>
+        </div>
         {mcpResponse && (
-          <p style={{ marginTop: '1rem' }}>
-            MCP says: {mcpResponse}
-          </p>
+          <div style={{ marginTop: '1rem' }}>
+            <ReactMarkdown>
+              {mcpResponse}
+            </ReactMarkdown>
+          </div>
         )}
       </div>
       <p className="read-the-docs">
