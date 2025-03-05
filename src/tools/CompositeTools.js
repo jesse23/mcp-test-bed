@@ -1,4 +1,4 @@
-export class ToolsAggregator {
+export class CompositeTools {
   constructor(providers = []) {
     this.providers = providers;
     this.toolsMap = new Map();

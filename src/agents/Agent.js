@@ -1,7 +1,6 @@
 /*
 type Update = {
   step: string;                    // Current step identifier
-  type: "text" | "markdown" | "function" | "error";  // Content type
   message: string;                 // Main content
   mode: "append" | "replace";      // How to handle content update
   tools: {
@@ -14,7 +13,9 @@ type Update = {
  */
 
 export class Agent {
-  constructor(onUpdate = async () => {}) {
+  constructor({
+    onUpdate = console.log
+  }) {
     this.onUpdate = onUpdate;
   }
 
@@ -37,9 +38,9 @@ export class ExampleAgent extends Agent {
       await this.onUpdate({ step: "processing", message: processedData, type: "final", isFinal: true });
 
       // Use callback to handle confirmation
-      const confirmedData = await this.onUpdate({ step: "confirm", message: processedData, type: "start" });
+      const confirmedData = await this.onUpdate({ step: "confirm", message: processedData, type: "start", confirm: true });
 
-      await this.onUpdate({ step: "confirmed", message: confirmedData, type: "final", isFinal: true });
+      await this.onUpdate(confirmedData);
 
       return confirmedData;
     } catch (error) {
@@ -82,33 +83,42 @@ export class ExampleAgent extends Agent {
       isFinal: true,
     });
 
-    return fullResponse;
+    return {
+      step: "ai-stream",
+      message: fullResponse,
+      isFinal: true,
+    };
   }
 
   processData(data) {
-    return `Processed: ${data.toUpperCase()}`;
+    return `Processed: ${data.message.toUpperCase()}`;
   }
 }
 
 // Example usage
-/*
-const agent = new ExampleAgent(async (update) => {
-  console.log("Update:", update);
+// Only run this example in Node.js environment
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  const agent = new ExampleAgent(async (update) => {
+    console.log("Update:", JSON.stringify(update));
 
-  if (update.step === "confirm") {
-    return new Promise((resolve) => {
-      process.stdout.write(`Confirm processed data: ${update.message}\nEnter value (or press Enter to accept): `);
+    if (update.confirm) {
+      return new Promise((resolve) => {
+        process.stdout.write(`Confirm processed data: ${update.message}\nEnter value (or press Enter to accept): `);
 
-      process.stdin.once("data", (data) => {
-        const userInput = data.toString().trim();
-        resolve(userInput || update.message);
-        process.stdin.destroy();
+        process.stdin.once("data", (data) => {
+          const userInput = data.toString().trim();
+          resolve({
+            step: "confirm", 
+            message: userInput || update.message,
+            isFinal: true,
+          });
+          process.stdin.destroy();
+        });
       });
-    });
-  }
-});
+    }
+  });
 
-agent.invoke("Hello").then((result) => {
-  console.log("Final Result:", result);
-});
-*/
+  agent.invoke("Hello").then((result) => {
+    console.log("Final Result:", result);
+  });
+} 
