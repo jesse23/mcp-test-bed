@@ -1,6 +1,6 @@
 import {CallToolResultSchema} from "@modelcontextprotocol/sdk/types.js";
 
-export class MCPOpenAIChatAdapter {
+export class MCPTools {
   constructor(client, options = {
     // Restriction enforced by OpenAI
     truncateDescriptionLength: 1024,
