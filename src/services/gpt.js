@@ -2,7 +2,7 @@
 export async function queryGPT({
   input,
   tools,
-  onUpdate = (value) => console.log(value)
+  onUpdate = console.log
 }) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -16,7 +16,7 @@ export async function queryGPT({
         { role: "user", content: input }
       ],
       temperature: 0.7,
-      max_tokens: 100,
+      // max_tokens: 100,
       tools,
       stream: true, // Enable streaming
     })
@@ -42,7 +42,7 @@ export async function queryGPT({
       if (line.startsWith('data: ')) {
         const data = line.slice(6);
         if (data === '[DONE]') {
-          console.log('\nStream complete');
+          console.log('Stream complete');
           break;
         }
 
@@ -59,7 +59,12 @@ export async function queryGPT({
             });
           }
           if (parsed.choices[0].delta.tool_calls?.[0]?.function) {
-            functionCall = parsed.choices[0].delta.tool_calls[0].function;
+            const functionChunk = parsed.choices[0].delta.tool_calls[0].function;
+            if (!functionCall) {
+              functionCall = functionChunk;
+            } else {
+              functionCall.arguments += functionChunk.arguments;
+            }
           }
         } catch (e) {
           console.error('Error parsing chunk:', e);
@@ -68,6 +73,6 @@ export async function queryGPT({
     }
   }
 
-  console.log('\nGPT Mini Response:', { message: fullResponse, tools: [functionCall] });
+  console.log('GPT Mini Response:', { message: fullResponse, tools: [functionCall] });
   return { message: fullResponse, tools: [functionCall] };
 }

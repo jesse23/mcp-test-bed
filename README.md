@@ -10,3 +10,8 @@ Currently, two official plugins are available:
 # Reference
 Adapter code is from:
 https://github.com/leartbeqiraj1/openai-mcp-client
+
+# TODO
+- [ ] Agent invoke input and aggregation
+- [ ] Callback types
+- [ ] Agentic Agent Example

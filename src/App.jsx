@@ -50,7 +50,7 @@ function MessageCard({ question, response, onConfirm, showConfirm }) {
                 setConfirmInput('');
               }
             }}
-            placeholder="Type your response and press Enter"
+            placeholder="Type if you have follow up comments and enter"
             style={{
               padding: '0.5rem',
               borderRadius: '4px',
@@ -185,7 +185,7 @@ function App() {
 
     try {
       // if agent does not support streaming, we can just await the response
-      const agentResp = await agent.invoke(agentInput);
+      const agentResp = await agent.invoke({ message: agentInput });
       setCurrentResponse(agentResp.message);
     } catch (error) {
       console.error('GPT Mini Error:', error);
