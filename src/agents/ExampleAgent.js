@@ -46,12 +46,14 @@ export class ExampleAgent extends Agent {
         step: "ai-stream",
         message: fullResponse,  // Accumulated message so far
         chunk: chunk,           // The latest appended string
+        mode: "replace"         // Use replace mode to update in place
       });
     }
 
     await this.onUpdate({
       step: "ai-stream",
       message: fullResponse,
+      mode: "append"  // Final message should be appended
     });
 
     return {
@@ -70,10 +72,18 @@ export class ExampleAgent extends Agent {
 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
   const agent = new ExampleAgent({
     onUpdate: async (update) => {
-      console.log("Update:", JSON.stringify(update));
+      if (update.mode === "replace") {
+        // Clear the current line and move cursor to beginning
+        process.stdout.write('\r\x1b[K' + update.message);
+      } else {
+        // For non-streaming updates, use normal console.log with newline
+        console.log(update.message);
+      }
 
       if (update.confirm) {
         return new Promise((resolve) => {
+          // Add a newline before the confirmation prompt
+          console.log();
           process.stdout.write(`Confirm processed data: ${update.message}\nEnter value (or press Enter to accept): `);
 
           process.stdin.once("data", (data) => {
